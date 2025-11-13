@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard SmartSim</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+        }
+        
+        .sidebar {
+            background-color: #34495e;
+            color: white;
+            min-height: calc(100vh - 56px);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid var(--secondary-color);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .badge-pending { background-color: var(--warning-color); }
+        .badge-completed { background-color: var(--success-color); }
+        .badge-inactive { background-color: var(--danger-color); }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-satellite-dish me-2"></i>
+                SmartSim Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dashboard" data-bs-toggle="tab">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#pendentes" data-bs-toggle="tab">
+                                <i class="fas fa-clock"></i> OS Pendentes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#manutencao" data-bs-toggle="tab">
+                                <i class="fas fa-tools"></i> Manutenção
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="tab-content">
+                    <!-- Dashboard Tab -->
+                    <div class="tab-pane fade show active" id="dashboard">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Dashboard</h1>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="fetchData()">
+                                <i class="fas fa-sync-alt"></i> Atualizar
+                            </button>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <i class="fas fa-tasks text-primary"></i>
+                                        <div class="number" id="total-os">0</div>
+                                        <div class="label">Total de OS</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <i class="fas fa-clock text-warning"></i>
+                                        <div class="number" id="pending-os">0</div>
+                                        <div class="label">OS Pendentes</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <i class="fas fa-satellite text-danger"></i>
+                                        <div class="number" id="inactive-devices">0</div>
+                                        <div class="label">Dispositivos Inativos</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        <div class="number" id="completed-os">0</div>
+                                        <div class="label">OS Concluídas</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Status das OS</div>
+                                    <div class="card-body">
+                                        <div class="chart-container">
+                                            <canvas id="osStatusChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Dispositivos</div>
+                                    <div class="card-body">
+                                        <div class="chart-container">
+                                            <canvas id="deviceStatusChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OS Pendentes Tab -->
+                    <div class="tab-pane fade" id="pendentes">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">OS Pendentes</h1>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>ID OS</th>
+                                                <th>Cliente</th>
+                                                <th>Dispositivo</th>
+                                                <th>Data</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pending-os-table">
+                                            <!-- Dados dinâmicos -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manutenção Tab -->
+                    <div class="tab-pane fade" id="manutencao">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Manutenção</h1>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Dispositivo</th>
+                                                <th>Cliente</th>
+                                                <th>Última Pontuação</th>
+                                                <th>Dias Inativo</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="maintenance-table">
+                                            <!-- Dados dinâmicos -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuração da API
+        const API_CONFIG = {
+            baseURL: 'https://sp.tracker-net.app',
+            userApiHash: '$2y$10$Dj9J.uuRlDGFslSzD7dze.Ou6W88DjuA/Zlg6R7Le5yJG0WyrwdKS'
+        };
+
+        let osStatusChart, deviceStatusChart;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            fetchData();
+        });
+
+        function initializeCharts() {
+            const osStatusCtx = document.getElementById('osStatusChart').getContext('2d');
+            osStatusChart = new Chart(osStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendentes', 'Concluídas'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#f39c12', '#2ecc71']
+                    }]
+                }
+            });
+
+            const deviceStatusCtx = document.getElementById('deviceStatusChart').getContext('2d');
+            deviceStatusChart = new Chart(deviceStatusCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ativos', 'Inativos'],
+                    datasets: [{
+                        label: 'Dispositivos',
+                        data: [0, 0],
+                        backgroundColor: ['#2ecc71', '#e74c3c']
+                    }]
+                }
+            });
+        }
+
+        async function fetchData() {
+            try {
+                // Dados simulados - substitua pela API real
+                const osData = await simulateOSData();
+                const deviceData = await simulateDeviceData();
+                
+                updateDashboard(osData, deviceData);
+            } catch (error) {
+                console.error('Erro:', error);
+            }
+        }
+
+        // SIMULAÇÃO - Substitua por API real
+        async function simulateOSData() {
+            return {
+                total: 24,
+                pending: 8,
+                completed: 16,
+                pendingList: [
+                    { id: 'OS-001', client: 'Cliente A', device: 'Rastreador A1', date: '2023-11-15', status: 'Pendente' },
+                    { id: 'OS-002', client: 'Cliente B', device: 'Chip B2', date: '2023-11-14', status: 'Pendente' }
+                ]
+            };
+        }
+
+        async function simulateDeviceData() {
+            return {
+                inactive: 5,
+                maintenanceList: [
+                    { device: 'TRK-001', client: 'Cliente X', lastScore: '2023-10-10', days: 36, status: 'Inativo' },
+                    { device: 'CHP-005', client: 'Cliente Y', lastScore: '2023-10-05', days: 41, status: 'Inativo' }
+                ]
+            };
+        }
+
+        function updateDashboard(osData, deviceData) {
+            // Atualizar cards
+            document.getElementById('total-os').textContent = osData.total;
+            document.getElementById('pending-os').textContent = osData.pending;
+            document.getElementById('completed-os').textContent = osData.completed;
+            document.getElementById('inactive-devices').textContent = deviceData.inactive;
+
+            // Atualizar gráficos
+            osStatusChart.data.datasets[0].data = [osData.pending, osData.completed];
+            osStatusChart.update();
+
+            deviceStatusChart.data.datasets[0].data = [osData.total - deviceData.inactive, deviceData.inactive];
+            deviceStatusChart.update();
+
+            // Atualizar tabelas
+            updatePendingTable(osData.pendingList);
+            updateMaintenanceTable(deviceData.maintenanceList);
+        }
+
+        function updatePendingTable(data) {
+            const table = document.getElementById('pending-os-table');
+            table.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${item.client}</td>
+                    <td>${item.device}</td>
+                    <td>${item.date}</td>
+                    <td><span class="badge badge-pending">${item.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateMaintenanceTable(data) {
+            const table = document.getElementById('maintenance-table');
+            table.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.device}</td>
+                    <td>${item.client}</td>
+                    <td>${item.lastScore}</td>
+                    <td>${item.days} dias</td>
+                    <td><span class="badge badge-inactive">${item.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Adicione aqui as funções reais da API quando estiverem prontas
+        /*
+        async function fetchRealOSData() {
+            const response = await fetch(`${API_CONFIG.baseURL}/api/orders`, {
+                headers: { 'Authorization': API_CONFIG.userApiHash }
+            });
+            return await response.json();
+        }
+        */
+    </script>
+</body>
+</html>
